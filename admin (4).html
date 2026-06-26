@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prova Final — Painel Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F2A4A; --navy-light:#1B3F66; --green:#1E8A6E; --green-light:#27A883;
+    --paper:#F7F5F0; --paper-dark:#EFEBE2; --ink:#1A2230; --ink-soft:#5B6473;
+    --line:#DDD8CB; --white:#FFFFFF; --red:#C0392B; --red-bg:#FBEAE8;
+    --warn-bg:#FFF4E0; --warn-text:#8A5A00;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.serif{font-family:'Source Serif 4',serif;}
+  button{font-family:inherit;}
+  table{width:100%;border-collapse:collapse;}
+
+  .layout{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+
+  .sidebar{background:var(--navy);color:rgba(255,255,255,0.85);padding:22px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;}
+  .sb-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;color:white;padding:0 8px 6px;}
+  .sb-logo .mark{width:26px;height:26px;border-radius:6px;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',serif;font-weight:700;font-size:13px;}
+  .sb-logo .tag{font-size:10px;color:rgba(255,255,255,0.5);font-weight:500;margin-left:auto;border:1px solid rgba(255,255,255,0.2);padding:2px 6px;border-radius:5px;}
+  .sb-nav{display:flex;flex-direction:column;gap:2px;flex:1;margin-top:20px;}
+  .sb-group{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:rgba(255,255,255,0.4);font-weight:700;padding:14px 12px 6px;}
+  .sb-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,0.68);}
+  .sb-item:hover{background:rgba(255,255,255,0.06);color:white;}
+  .sb-item.active{background:rgba(255,255,255,0.12);color:white;}
+  .sb-item .count{margin-left:auto;font-size:10.5px;background:rgba(255,255,255,0.15);padding:1px 6px;border-radius:99px;}
+  .sb-item .count.warn{background:var(--warn-text);color:white;}
+  .sb-foot{border-top:1px solid rgba(255,255,255,0.12);padding-top:14px;margin-top:10px;font-size:12px;}
+  .sb-admin{display:flex;align-items:center;gap:9px;}
+  .sb-admin .av{width:26px;height:26px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:white;}
+  .sb-admin .role{color:rgba(255,255,255,0.5);font-size:11px;}
+
+  .main{padding:26px 34px 60px;max-width:1180px;}
+  .topbar{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:12px;}
+  .topbar h1{font-size:23px;color:var(--navy);font-weight:600;}
+  .topbar .sub{font-size:13px;color:var(--ink-soft);margin-top:3px;}
+
+  .page{display:none;} .page.active{display:block;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+  .stat-card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:16px;}
+  .stat-card .label{font-size:11.5px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .stat-card .value{font-family:'Source Serif 4',serif;font-size:26px;color:var(--navy);margin-top:4px;}
+
+  .alert-banner{
+    background:var(--warn-bg);border:1px solid #E8C77A;color:var(--warn-text);border-radius:10px;
+    padding:13px 16px;font-size:13px;font-weight:600;margin-bottom:20px;display:flex;align-items:center;gap:10px;
+  }
+
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:13px;padding:0;margin-bottom:20px;overflow:hidden;}
+  .panel-head{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .panel-head h3{font-size:14.5px;color:var(--navy);font-weight:600;}
+  .panel-body{padding:4px 0;}
+
+  .toolbar{display:flex;gap:8px;flex-wrap:wrap;}
+  select,input[type="text"],textarea{
+    border:1px solid var(--line);border-radius:7px;padding:8px 11px;font-size:13px;font-family:inherit;background:var(--white);color:var(--ink);
+  }
+  textarea{width:100%;resize:vertical;}
+
+  th,td{text-align:left;padding:11px 18px;font-size:13px;border-bottom:1px solid var(--paper-dark);}
+  th{font-size:11px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);font-weight:700;background:var(--paper);}
+  tr:last-child td{border-bottom:none;}
+  td.q-text-cell{max-width:340px;color:var(--ink-soft);}
+
+  .badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;letter-spacing:.02em;white-space:nowrap;}
+  .badge.pendente{background:var(--warn-bg);color:var(--warn-text);}
+  .badge.aprovada{background:rgba(30,138,110,0.12);color:var(--green);}
+  .badge.rejeitada{background:var(--red-bg);color:var(--red);}
+  .badge.premium{background:rgba(15,42,74,0.08);color:var(--navy);}
+  .badge.free{background:var(--paper-dark);color:var(--ink-soft);}
+  .badge.ilimitada{background:rgba(30,138,110,0.12);color:var(--green);}
+
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:7px 13px;border-radius:7px;font-weight:600;font-size:12.5px;border:1px solid transparent;cursor:pointer;}
+  .btn-primary{background:var(--navy);color:white;}
+  .btn-ghost{background:transparent;color:var(--navy);border-color:var(--line);}
+  .btn-green{background:var(--green);color:white;}
+  .btn-red{background:transparent;color:var(--red);border-color:var(--red-bg);}
+  .btn-xs{padding:5px 10px;font-size:11.5px;}
+  .row-actions{display:flex;gap:6px;}
+
+  .toggle{
+    width:38px;height:21px;border-radius:99px;background:var(--paper-dark);position:relative;cursor:pointer;display:inline-block;flex-shrink:0;
+    border:1px solid var(--line);
+  }
+  .toggle.on{background:var(--green);border-color:var(--green);}
+  .toggle .knob{width:15px;height:15px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;transition:left .15s ease;box-shadow:0 1px 3px rgba(0,0,0,0.3);}
+  .toggle.on .knob{left:19px;}
+
+  .upload-zone{
+    border:2px dashed var(--line);border-radius:12px;padding:36px;text-align:center;color:var(--ink-soft);
+    font-size:13.5px;cursor:pointer;background:var(--paper-dark);
+  }
+  .upload-zone:hover{border-color:var(--navy);}
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:12px 18px;border-radius:9px;
+    font-size:13px;font-weight:500;box-shadow:0 12px 30px -10px rgba(0,0,0,0.3);transform:translateY(20px);opacity:0;
+    transition:all .25s ease;pointer-events:none;z-index:100;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+
+  .tabs-row{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
+  .tab-btn{padding:9px 16px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;}
+  .tab-btn.active{color:var(--navy);border-color:var(--navy);}
+
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .main{padding:16px;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+    th,td{padding:9px 10px;font-size:12px;}
+  }
+
+  /* ---- auth screen ---- */
+  #auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--paper);padding:24px;}
+  .auth-card{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:32px;width:100%;max-width:380px;box-shadow:0 20px 50px -20px rgba(15,42,74,0.2);}
+  .auth-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--navy);margin-bottom:6px;}
+  .auth-logo .mark{width:28px;height:28px;border-radius:7px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',serif;font-weight:700;font-size:14px;color:white;}
+  .auth-card h2{font-size:19px;color:var(--navy);font-weight:600;margin-bottom:4px;}
+  .auth-card p.sub{font-size:13px;color:var(--ink-soft);margin-bottom:22px;}
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .auth-field input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;}
+  .auth-card .btn{width:100%;margin-top:6px;justify-content:center;padding:12px;}
+  .auth-msg{font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none;}
+  .auth-msg.show{display:block;}
+  .auth-msg.error{background:var(--red-bg);color:var(--red);}
+  .auth-loading{opacity:.6;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><span class="mark">P</span>Prova Final<span class="tag" style="margin-left:auto;">ADMIN</span></div>
+    <h2>Acesso administrativo</h2>
+    <p class="sub">Só contas em <code>admin_users</code> conseguem entrar aqui.</p>
+    <div class="auth-msg" id="auth-msg"></div>
+    <form id="auth-form">
+      <div class="auth-field"><label>E-mail</label><input type="email" id="auth-email" required autocomplete="email"></div>
+      <div class="auth-field"><label>Senha</label><input type="password" id="auth-password" required autocomplete="current-password"></div>
+      <button type="submit" class="btn btn-primary" id="auth-submit">Entrar</button>
+    </form>
+  </div>
+</div>
+
+<div class="layout" id="app-shell" style="display:none;">
+  <aside class="sidebar">
+    <div class="sb-logo"><span class="mark">P</span>Prova Final<span class="tag">ADMIN</span></div>
+    <nav class="sb-nav">
+      <div class="sb-group">Visão geral</div>
+      <div class="sb-item active" data-page="dashboard">📊 Dashboard</div>
+      <div class="sb-item" data-page="alunos">🎓 Alunos</div>
+
+      <div class="sb-group">Conteúdo</div>
+      <div class="sb-item" data-page="questoes">📚 Questões <span class="count warn" id="sb-pend-count" style="display:none;"></span></div>
+      <div class="sb-item" data-page="importador">⬆️ Importador</div>
+      <div class="sb-item" data-page="simulados">⏱️ Simulados</div>
+
+      <div class="sb-group">Comercial</div>
+      <div class="sb-item" data-page="produtos">🛒 Produtos / Catálogo</div>
+      <div class="sb-item" data-page="banners">📣 Banners</div>
+
+      <div class="sb-group">Sistema</div>
+      <div class="sb-item" data-page="equipe">👥 Equipe</div>
+      <div class="sb-item" data-page="settings">⚙️ Settings</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-admin">
+        <div class="av" id="sb-avatar">--</div>
+        <div><div style="color:white;font-weight:600;" id="sb-name">Carregando...</div><div class="role" id="sb-role">--</div></div>
+      </div>
+      <div class="sb-item" id="btn-logout" style="margin-top:10px;">↪ Sair</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="topbar"><div><h1>Dashboard</h1><div class="sub">Visão geral da plataforma</div></div></div>
+
+      <div class="alert-banner" id="alert-pendentes" style="display:none;"></div>
+
+      <div class="stat-row">
+        <div class="stat-card"><div class="label">Alunos cadastrados</div><div class="value" id="stat-alunos">--</div></div>
+        <div class="stat-card"><div class="label">Pagantes</div><div class="value" id="stat-pagantes">--</div></div>
+        <div class="stat-card"><div class="label">Questões aprovadas</div><div class="value" id="stat-aprovadas">--</div></div>
+        <div class="stat-card"><div class="label">Aguardando revisão</div><div class="value" id="stat-pendentes-card">--</div></div>
+      </div>
+    </div>
+
+    <!-- ALUNOS -->
+    <div class="page" id="page-alunos">
+      <div class="topbar"><div><h1>Alunos</h1><div class="sub" id="alunos-sub">Carregando...</div></div>
+        <div class="toolbar"><input type="text" id="alunos-busca" placeholder="Buscar por nome ou e-mail..."></div>
+      </div>
+      <div class="panel"><div class="panel-body">
+        <table id="alunos-table"></table>
+      </div></div>
+    </div>
+
+    <!-- QUESTOES -->
+    <div class="page" id="page-questoes">
+      <div class="topbar"><div><h1>Questões</h1><div class="sub">Fluxo de revisão clínica antes da publicação</div></div></div>
+
+      <div class="tabs-row">
+        <div class="tab-btn active" data-qtab="pendente">Pendentes</div>
+        <div class="tab-btn" data-qtab="aprovada">Aprovadas</div>
+        <div class="tab-btn" data-qtab="rejeitada">Rejeitadas</div>
+      </div>
+
+      <div class="panel"><div class="panel-body">
+        <table id="questions-table"></table>
+      </div></div>
+    </div>
+
+    <!-- IMPORTADOR -->
+    <div class="page" id="page-importador">
+      <div class="topbar"><div><h1>Importador de questões <span class="badge pendente">preview</span></h1><div class="sub">Upload de JSON · ainda não conectado ao banco (próxima etapa) — entram sempre como pendente para revisão</div></div></div>
+
+      <div class="panel"><div class="panel-body" style="padding:22px;">
+        <div class="upload-zone" id="upload-zone">
+          📄 Arraste o arquivo .json aqui ou clique para selecionar<br>
+          <span style="font-size:11.5px;">Formato esperado: array de objetos com enunciado, opções, gabarito, área, tema</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;">
+          <div>
+            <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Vincular ao produto</label>
+            <select style="width:100%;"><option>ENAMED 2026</option><option>Revalida</option><option>USP - Residência</option></select>
+          </div>
+          <div>
+            <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Status inicial</label>
+            <select style="width:100%;" disabled><option>Pendente (obrigatório)</option></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="margin-top:18px;" onclick="simulateImport()">Validar e importar</button>
+
+        <div id="import-report" style="display:none;margin-top:20px;">
+          <div class="panel" style="margin-bottom:0;">
+            <div class="panel-head"><h3>Relatório de importação</h3></div>
+            <div class="panel-body" style="padding:16px 18px;font-size:13px;">
+              <p style="color:var(--green);font-weight:600;margin-bottom:8px;">✓ 47 questões válidas — importadas como pendentes</p>
+              <p style="color:var(--red);font-weight:600;margin-bottom:4px;">✗ 3 rejeitadas:</p>
+              <ul style="margin-left:18px;color:var(--ink-soft);font-size:12.5px;line-height:1.7;">
+                <li>Linha 12 — duplicata (mesmo enunciado + gabarito da questão #8841)</li>
+                <li>Linha 29 — campo "tema" vazio</li>
+                <li>Linha 41 — enunciado referencia "imagem abaixo" mas imagem_url está vazio</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div></div>
+    </div>
+
+    <!-- SIMULADOS -->
+    <div class="page" id="page-simulados">
+      <div class="topbar"><div><h1>Simulados <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa)</div>
+        <button class="btn btn-primary" style="margin-top:8px;">+ Novo simulado</button>
+      </div></div>
+      <div class="panel"><div class="panel-body">
+        <table>
+          <tr><th>Nome</th><th>Questões</th><th>Tempo</th><th>Trial</th><th>Status</th><th></th></tr>
+          <tr><td>Simulado ENAMED — Bloco 1</td><td>90</td><td>180 min</td><td><span class="toggle on"><span class="knob"></span></span></td><td><span class="badge aprovada">ativo</span></td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
+          <tr><td>Simulado USP — Completo</td><td>100</td><td>240 min</td><td><span class="toggle"><span class="knob"></span></span></td><td><span class="badge aprovada">ativo</span></td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- PRODUTOS -->
+    <div class="page" id="page-produtos">
+      <div class="topbar"><div><h1>Produtos / Catálogo</h1><div class="sub" id="produtos-sub">Carregando...</div></div></div>
+      <div class="panel"><div class="panel-body">
+        <table id="produtos-table"></table>
+      </div></div>
+    </div>
+
+    <!-- BANNERS -->
+    <div class="page" id="page-banners">
+      <div class="topbar"><div><h1>Banners <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa)</div></div>
+        <button class="btn btn-primary" style="margin-top:8px;">+ Novo banner</button>
+      </div>
+      <div class="panel"><div class="panel-body">
+        <table>
+          <tr><th>Título</th><th>Posição</th><th>Planos-alvo</th><th>Ativo</th><th></th></tr>
+          <tr><td>Reta Final de Cirurgia já disponível</td><td>dashboard</td><td>free, qbank</td><td><span class="toggle on"><span class="knob"></span></span></td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- EQUIPE -->
+    <div class="page" id="page-equipe">
+      <div class="topbar"><div><h1>Equipe <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa)</div></div>
+        <button class="btn btn-primary" style="margin-top:8px;">+ Convidar colaborador</button>
+      </div>
+      <div class="panel"><div class="panel-body">
+        <table>
+          <tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Abas permitidas</th><th></th></tr>
+          <tr><td>Dra. Renata</td><td>renata@provafinal.com.br</td><td>super</td><td>todas</td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
+          <tr><td>Dr. Pedro (revisor)</td><td>pedro@provafinal.com.br</td><td>colaborador</td><td>questões, importador</td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
+        </table>
+      </div></div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="topbar"><div><h1>Settings <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa) — quando estiver, salva em app_settings, nunca em localStorage</div></div></div>
+      <div class="panel"><div class="panel-body" style="padding:20px;max-width:480px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Meta Pixel ID</label>
+        <input type="text" value="" placeholder="ex: 1234567890" style="width:100%;margin-bottom:14px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">E-mail remetente (Resend)</label>
+        <input type="text" value="contato@provafinal.com.br" style="width:100%;margin-bottom:14px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Webhook secret (hottok)</label>
+        <input type="text" value="••••••••••••••••" style="width:100%;margin-bottom:16px;">
+        <button class="btn btn-primary">Salvar configurações</button>
+      </div></div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast">✓ Salvo</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="document.getElementById('auth-msg').className='auth-msg show error';document.getElementById('auth-msg').textContent='Não consegui carregar a biblioteca do Supabase (CDN). Verifique sua conexão e recarregue a página.';"></script>
+<script>
+// ============================================================
+// CONEXÃO REAL COM SUPABASE
+// ============================================================
+const SUPA_URL = 'https://xkaptgdauxapvjzbpkjl.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrYXB0Z2RhdXhhcHZqemJwa2psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNDc0OTQsImV4cCI6MjA5NzkyMzQ5NH0.0vkVqUVS0ErbmkcQ7ntVB44T2p5lLEcDMqrjAgV8a88';
+
+window.addEventListener('error', (e) => {
+  const el = document.getElementById('auth-msg');
+  if (el) {
+    el.className = 'auth-msg show error';
+    el.textContent = 'Erro inesperado: ' + (e.message || 'veja o console (F12) para detalhes.');
+  }
+});
+
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2600);
+}
+function initials(name){
+  if (!name) return '--';
+  return name.trim().split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+}
+function planBadgeClass(plan){
+  if (!plan || plan === 'free') return 'free';
+  if (plan.startsWith('ilimitada')) return 'ilimitada';
+  if (plan.startsWith('premium')) return 'premium';
+  return 'premium'; // qbank etc. — sem cor própria ainda, reaproveita premium
+}
+
+// ---- AUTH ----
+function showAuthMsg(text){
+  const el = document.getElementById('auth-msg');
+  el.textContent = text;
+  el.className = 'auth-msg show error';
+}
+function hideAuthMsg(){
+  document.getElementById('auth-msg').className = 'auth-msg';
+}
+
+document.getElementById('auth-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAuthMsg();
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const card = document.querySelector('.auth-card');
+  card.classList.add('auth-loading');
+
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    // checagem de is_admin acontece no onAuthStateChange, depois do login
+  } catch (err) {
+    const msg = (err.message || '').toLowerCase();
+    let friendly = err.message || 'Algo deu errado.';
+    if (msg.includes('invalid login credentials')) friendly = 'E-mail ou senha incorretos.';
+    else if (msg.includes('email not confirmed')) friendly = 'Confirme seu e-mail antes de entrar.';
+    showAuthMsg(friendly);
+  } finally {
+    card.classList.remove('auth-loading');
+  }
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+});
+
+let appInitialized = false;
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (!session) {
+    appInitialized = false;
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    return;
+  }
+
+  // tem sessão — mas só é admin se existir em admin_users (checado via is_admin())
+  const { data: isAdmin, error: adminErr } = await sb.rpc('is_admin');
+  if (adminErr || !isAdmin) {
+    showAuthMsg('Esta conta não tem acesso administrativo.');
+    await sb.auth.signOut();
+    return;
+  }
+
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app-shell').style.display = 'grid';
+  if (!appInitialized) {
+    appInitialized = true;
+    initAdminApp(session);
+  }
+});
+
+// ---- inicialização ----
+async function initAdminApp(session){
+  const { data: profile } = await sb.from('profiles').select('name, email').eq('id', session.user.id).single();
+  const name = profile?.name || profile?.email || session.user.email;
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('sb-avatar').textContent = initials(name);
+  document.getElementById('sb-role').textContent = 'admin';
+
+  await Promise.all([
+    loadDashboardStats(),
+    loadQuestoesAdmin('pendente'),
+    loadAlunos(),
+    loadProdutos(),
+  ]);
+}
+
+// ---- dashboard ----
+async function loadDashboardStats(){
+  const [{ count: totalAlunos }, { count: pagantes }, { count: aprovadas }, { count: pendentes }] = await Promise.all([
+    sb.from('profiles').select('*', { count: 'exact', head: true }),
+    sb.from('profiles').select('*', { count: 'exact', head: true }).neq('plan', 'free'),
+    sb.from('questions_aluno').select('*', { count: 'exact', head: true }),
+    sb.rpc('list_questions_admin', { p_status: 'pendente' }).then(r => ({ count: (r.data || []).length })),
+  ]);
+
+  document.getElementById('stat-alunos').textContent = totalAlunos ?? 0;
+  document.getElementById('stat-pagantes').textContent = pagantes ?? 0;
+  document.getElementById('stat-aprovadas').textContent = aprovadas ?? 0;
+  document.getElementById('stat-pendentes-card').textContent = pendentes ?? 0;
+
+  const sbCount = document.getElementById('sb-pend-count');
+  const alertEl = document.getElementById('alert-pendentes');
+  if (pendentes > 0) {
+    sbCount.style.display = 'inline';
+    sbCount.textContent = `${pendentes} pend.`;
+    alertEl.style.display = 'flex';
+    alertEl.innerHTML = `⚠️ ${pendentes} questão(ões) aguardando revisão clínica antes de ficarem visíveis aos alunos. <a href="#" onclick="goPage('questoes');return false;" style="text-decoration:underline;margin-left:4px;">Revisar agora →</a>`;
+  } else {
+    sbCount.style.display = 'none';
+    alertEl.style.display = 'none';
+  }
+}
+
+// ---- questões: revisão clínica ----
+async function loadQuestoesAdmin(status){
+  const table = document.getElementById('questions-table');
+  const { data, error } = await sb.rpc('list_questions_admin', { p_status: status });
+  if (error) {
+    table.innerHTML = `<tr><td style="padding:16px;color:var(--red);">Erro: ${error.message}</td></tr>`;
+    return;
+  }
+  const rows = data || [];
+  const actionCol = (q) => status === 'pendente'
+    ? `<button class="btn btn-green btn-xs" onclick="reviewQuestion(${q.id},'aprovada')">Aprovar</button>
+       <button class="btn btn-red btn-xs" onclick="reviewQuestion(${q.id},'rejeitada')">Rejeitar</button>`
+    : `<button class="btn btn-ghost btn-xs" onclick="reviewQuestion(${q.id},'pendente')">Voltar p/ pendente</button>`;
+
+  table.innerHTML = `
+    <tr><th>ID</th><th>Área / Tema</th><th>Enunciado</th><th>Gabarito</th><th>Origem</th><th></th></tr>
+    ${rows.map(q => `
+      <tr>
+        <td>#${q.id}</td>
+        <td>${q.area}<br><span style="color:var(--ink-soft);font-size:11.5px;">${q.tema || ''}</span></td>
+        <td class="q-text-cell">${q.enunciado}</td>
+        <td><span class="badge aprovada">${q.gabarito}</span></td>
+        <td style="color:var(--ink-soft);font-size:12px;">${q.revisado_por || '—'}</td>
+        <td class="row-actions">${actionCol(q)}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="6" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhuma questão aqui.</td></tr>`}
+  `;
+}
+
+document.querySelectorAll('.tab-btn').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadQuestoesAdmin(tab.dataset.qtab);
+  });
+});
+
+async function reviewQuestion(id, newStatus){
+  const { error } = await sb.rpc('review_question', { p_id: id, p_status: newStatus });
+  if (error) {
+    showToast('Erro: ' + error.message);
+    return;
+  }
+  showToast(
+    newStatus === 'aprovada' ? '✓ Questão aprovada — agora visível para alunos' :
+    newStatus === 'rejeitada' ? '✗ Questão rejeitada' : '↩ Questão voltou para pendente'
+  );
+  const activeTab = document.querySelector('.tab-btn.active').dataset.qtab;
+  loadQuestoesAdmin(activeTab);
+  loadDashboardStats();
+}
+
+// ---- alunos ----
+async function loadAlunos(){
+  const { data, error, count } = await sb.from('profiles')
+    .select('id, name, email, plan, plan_expires_at', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .limit(200);
+
+  const table = document.getElementById('alunos-table');
+  if (error) {
+    table.innerHTML = `<tr><td style="padding:16px;color:var(--red);">Erro: ${error.message}</td></tr>`;
+    return;
+  }
+  document.getElementById('alunos-sub').textContent = `${count ?? data.length} cadastrados`;
+  table.innerHTML = `
+    <tr><th>Nome</th><th>E-mail</th><th>Plano</th><th>Expira em</th></tr>
+    ${(data || []).map(a => `
+      <tr>
+        <td>${a.name || '—'}</td>
+        <td>${a.email}</td>
+        <td><span class="badge ${planBadgeClass(a.plan)}">${a.plan}</span></td>
+        <td>${a.plan_expires_at ? new Date(a.plan_expires_at).toLocaleDateString('pt-BR') : '—'}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhum aluno ainda.</td></tr>`}
+  `;
+}
+
+document.getElementById('alunos-busca').addEventListener('input', async (e) => {
+  const termo = e.target.value.trim();
+  let query = sb.from('profiles').select('id, name, email, plan, plan_expires_at').order('created_at', { ascending: false }).limit(200);
+  if (termo) query = query.or(`name.ilike.%${termo}%,email.ilike.%${termo}%`);
+  const { data } = await query;
+  const table = document.getElementById('alunos-table');
+  table.innerHTML = `
+    <tr><th>Nome</th><th>E-mail</th><th>Plano</th><th>Expira em</th></tr>
+    ${(data || []).map(a => `
+      <tr>
+        <td>${a.name || '—'}</td>
+        <td>${a.email}</td>
+        <td><span class="badge ${planBadgeClass(a.plan)}">${a.plan}</span></td>
+        <td>${a.plan_expires_at ? new Date(a.plan_expires_at).toLocaleDateString('pt-BR') : '—'}</td>
+      </tr>
+    `).join('') || `<tr><td colspan="4" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhum resultado.</td></tr>`}
+  `;
+});
+
+// ---- produtos ----
+async function loadProdutos(){
+  const { data, error } = await sb.from('products').select('*').order('home_ordem');
+  const table = document.getElementById('produtos-table');
+  if (error) {
+    table.innerHTML = `<tr><td style="padding:16px;color:var(--red);">Erro: ${error.message}</td></tr>`;
+    return;
+  }
+  document.getElementById('produtos-sub').textContent = `${(data || []).length} produtos no catálogo`;
+  table.innerHTML = `
+    <tr><th>Produto</th><th>Tipo</th><th>Preço</th><th>Na home</th><th>Ativo</th></tr>
+    ${(data || []).map(p => `
+      <tr data-product-id="${p.id}">
+        <td>${p.name}</td>
+        <td>${p.type}</td>
+        <td>${p.preco_label || '—'}</td>
+        <td><span class="toggle ${p.show_home ? 'on' : ''}" data-field="show_home"><span class="knob"></span></span></td>
+        <td><span class="toggle ${p.active ? 'on' : ''}" data-field="active"><span class="knob"></span></span></td>
+      </tr>
+    `).join('')}
+  `;
+
+  table.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', async () => {
+      const row = t.closest('tr');
+      const productId = row.dataset.productId;
+      const field = t.dataset.field;
+      const novoValor = !t.classList.contains('on');
+      const { error: updErr } = await sb.from('products').update({ [field]: novoValor }).eq('id', productId);
+      if (updErr) {
+        showToast('Erro: ' + updErr.message);
+        return;
+      }
+      t.classList.toggle('on');
+      showToast('✓ Atualizado');
+    });
+  });
+}
+
+// ---- importador (ainda preview — sem conexão real) ----
+function simulateImport(){
+  document.getElementById('import-report').style.display = 'block';
+  showToast('Preview only — importador real entra na próxima etapa');
+}
+
+// ---- toggles das páginas ainda não conectadas (simulados/banners) ----
+document.querySelectorAll('#page-simulados .toggle, #page-banners .toggle').forEach(t => {
+  t.addEventListener('click', () => t.classList.toggle('on'));
+});
+
+// ---- navegação sidebar ----
+function goPage(name){
+  document.querySelectorAll('.sb-item[data-page]').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.sb-item[data-page="${name}"]`).classList.add('active');
+  document.getElementById('page-' + name).classList.add('active');
+}
+document.querySelectorAll('.sb-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => goPage(item.dataset.page));
+});
+</script>
+
+</body>
+</html>
