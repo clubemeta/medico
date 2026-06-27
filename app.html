@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prova Final — App do Aluno</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0F2A4A; --navy-light:#1B3F66; --green:#1E8A6E; --green-light:#27A883;
+    --paper:#F7F5F0; --paper-dark:#EFEBE2; --ink:#1A2230; --ink-soft:#5B6473;
+    --line:#DDD8CB; --white:#FFFFFF; --red:#C0392B; --red-bg:#FBEAE8;
+    --warn-bg:#FFF4E0; --warn-text:#8A5A00;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--paper);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.serif{font-family:'Source Serif 4',serif;}
+  button{font-family:inherit;}
+
+  .layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+
+  /* ---- sidebar ---- */
+  .sidebar{
+    background:var(--navy);color:rgba(255,255,255,0.85);
+    padding:22px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+  }
+  .sb-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:16.5px;color:white;padding:0 8px 24px;}
+  .sb-logo .mark{width:28px;height:28px;border-radius:7px;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',serif;font-weight:700;font-size:14px;}
+  .sb-nav{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .sb-item{
+    display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:9px;
+    font-size:13.5px;font-weight:500;cursor:pointer;color:rgba(255,255,255,0.68);
+    transition:background .12s ease;
+  }
+  .sb-item svg{flex-shrink:0;opacity:.85;}
+  .sb-item:hover{background:rgba(255,255,255,0.06);color:white;}
+  .sb-item.active{background:rgba(255,255,255,0.12);color:white;}
+  .sb-item .lock{margin-left:auto;font-size:11px;opacity:.6;}
+  .sb-foot{border-top:1px solid rgba(255,255,255,0.12);padding-top:14px;margin-top:10px;}
+  .sb-plan{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;
+    background:rgba(255,255,255,0.06);font-size:12px;
+  }
+  .sb-plan .avatar{width:30px;height:30px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;}
+  .sb-plan .name{font-weight:600;color:white;font-size:13px;}
+  .sb-plan .plan-tag{color:rgba(255,255,255,0.55);font-size:11px;}
+
+  /* ---- main ---- */
+  .main{padding:28px 36px 60px;max-width:1080px;}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;}
+  .topbar h1{font-size:24px;color:var(--navy);font-weight:600;}
+  .topbar .sub{font-size:13.5px;color:var(--ink-soft);margin-top:3px;}
+  .top-actions{display:flex;gap:14px;align-items:center;}
+  .icon-btn{
+    width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--white);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;color:var(--ink-soft);
+  }
+  .icon-btn .badge-dot{position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--red);border:2px solid var(--paper);}
+
+  .page{display:none;}
+  .page.active{display:block;}
+
+  /* dashboard cards */
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px;}
+  .stat-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:18px;}
+  .stat-card .label{font-size:12px;color:var(--ink-soft);font-weight:600;text-transform:uppercase;letter-spacing:.03em;}
+  .stat-card .value{font-family:'Source Serif 4',serif;font-size:30px;color:var(--navy);margin-top:6px;}
+  .stat-card .delta{font-size:12px;color:var(--green);margin-top:4px;font-weight:600;}
+
+  .banner{
+    background:linear-gradient(120deg,var(--navy),var(--navy-light));color:white;border-radius:14px;
+    padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:16px;flex-wrap:wrap;
+  }
+  .banner .emoji{font-size:26px;}
+  .banner h3{font-size:16px;font-weight:600;}
+  .banner p{font-size:13px;color:rgba(255,255,255,0.75);margin-top:3px;}
+  .banner .btn-green{flex-shrink:0;}
+
+  .panel{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:20px;}
+  .panel h3{font-size:15px;color:var(--navy);font-weight:600;margin-bottom:16px;}
+
+  .ranking-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--paper-dark);font-size:13.5px;}
+  .ranking-row:last-child{border-bottom:none;}
+  .ranking-row .pos{width:22px;font-weight:700;color:var(--ink-soft);}
+  .ranking-row .av{width:28px;height:28px;border-radius:50%;background:var(--paper-dark);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--navy);}
+  .ranking-row .pts{margin-left:auto;font-weight:700;color:var(--green);}
+
+  /* filters / questions page */
+  .filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  select, input[type="text"]{
+    border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-size:13.5px;font-family:inherit;
+    background:var(--white);color:var(--ink);
+  }
+  select:disabled{opacity:.5;cursor:not-allowed;}
+  .lock-pill{font-size:10.5px;background:var(--warn-bg);color:var(--warn-text);padding:3px 7px;border-radius:6px;font-weight:700;margin-left:6px;}
+
+  .q-card{background:var(--white);border:1px solid var(--line);border-radius:14px;padding:24px;margin-bottom:18px;}
+  .q-meta{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .tag{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;padding:4px 9px;border-radius:6px;background:var(--paper-dark);color:var(--ink-soft);}
+  .tag.area{background:rgba(15,42,74,0.08);color:var(--navy);}
+  .q-text{font-size:15px;line-height:1.6;margin-bottom:6px;}
+  .q-img{margin:14px 0;border-radius:10px;border:1px solid var(--line);overflow:hidden;}
+  .q-img img{width:100%;display:block;}
+
+  .opt{
+    display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border:1.5px solid var(--line);
+    border-radius:10px;margin-top:10px;cursor:pointer;font-size:14px;transition:all .12s ease;
+  }
+  .opt:hover{border-color:var(--navy-light);}
+  .opt .letter{
+    width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink-soft);
+  }
+  .opt.selected{border-color:var(--navy);background:rgba(15,42,74,0.04);}
+  .opt.selected .letter{background:var(--navy);border-color:var(--navy);color:white;}
+  .opt.correct{border-color:var(--green);background:rgba(30,138,110,0.08);}
+  .opt.correct .letter{background:var(--green);border-color:var(--green);color:white;}
+  .opt.wrong{border-color:var(--red);background:var(--red-bg);}
+  .opt.wrong .letter{background:var(--red);border-color:var(--red);color:white;}
+  .opt.disabled{cursor:default;}
+
+  .q-actions{display:flex;justify-content:space-between;align-items:center;margin-top:18px;}
+  .q-actions .btn-row{display:flex;gap:10px;}
+
+  .feedback{margin-top:16px;padding:14px 16px;border-radius:10px;font-size:13.5px;line-height:1.6;display:none;}
+  .feedback.show{display:block;}
+  .feedback.correct-fb{background:rgba(30,138,110,0.08);border:1px solid var(--green);color:var(--ink);}
+  .feedback.wrong-fb{background:var(--red-bg);border:1px solid var(--red);color:var(--ink);}
+  .feedback strong{display:block;margin-bottom:4px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 18px;border-radius:8px;font-weight:600;font-size:13.5px;border:1px solid transparent;cursor:pointer;transition:all .15s ease;}
+  .btn-primary{background:var(--navy);color:white;}
+  .btn-primary:hover{background:var(--navy-light);}
+  .btn-ghost{background:transparent;color:var(--navy);border-color:var(--line);}
+  .btn-green{background:var(--green);color:white;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .upsell-card{
+    border:1.5px dashed var(--green);background:rgba(30,138,110,0.05);border-radius:14px;
+    padding:28px;text-align:center;
+  }
+  .upsell-card .emoji{font-size:30px;margin-bottom:8px;}
+  .upsell-card h3{color:var(--navy);font-size:16px;margin-bottom:6px;}
+  .upsell-card p{font-size:13.5px;color:var(--ink-soft);margin-bottom:16px;max-width:340px;margin-left:auto;margin-right:auto;}
+
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:var(--navy);color:white;padding:13px 20px;
+    border-radius:10px;font-size:13.5px;font-weight:500;box-shadow:0 12px 30px -10px rgba(0,0,0,0.3);
+    display:flex;align-items:center;gap:10px;transform:translateY(20px);opacity:0;transition:all .25s ease;pointer-events:none;z-index:100;
+  }
+  .toast.show{transform:translateY(0);opacity:1;}
+
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;}
+    .sidebar{display:none;}
+    .sidebar.mobile-open{
+      display:flex;position:fixed;inset:0;width:240px;z-index:60;
+    }
+    .main{padding:18px;}
+    .stat-row{grid-template-columns:repeat(2,1fr);}
+  }
+
+  /* ---- auth screen ---- */
+  #auth-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:var(--paper);padding:24px;
+  }
+  .auth-card{
+    background:var(--white);border:1px solid var(--line);border-radius:16px;
+    padding:32px;width:100%;max-width:380px;box-shadow:0 20px 50px -20px rgba(15,42,74,0.2);
+  }
+  .auth-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--navy);margin-bottom:6px;}
+  .auth-logo .mark{width:28px;height:28px;border-radius:7px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-family:'Source Serif 4',serif;font-weight:700;font-size:14px;color:white;}
+  .auth-card h2{font-size:19px;color:var(--navy);font-weight:600;margin-bottom:4px;}
+  .auth-card p.sub{font-size:13px;color:var(--ink-soft);margin-bottom:22px;}
+  .auth-field{margin-bottom:14px;}
+  .auth-field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink-soft);margin-bottom:6px;}
+  .auth-field input{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:8px;font-size:14px;font-family:inherit;}
+  .auth-card .btn{width:100%;margin-top:6px;justify-content:center;padding:12px;}
+  .auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:var(--ink-soft);}
+  .auth-toggle a{color:var(--navy);font-weight:600;cursor:pointer;}
+  .auth-msg{font-size:13px;padding:10px 12px;border-radius:8px;margin-bottom:14px;display:none;}
+  .auth-msg.show{display:block;}
+  .auth-msg.error{background:var(--red-bg);color:var(--red);}
+  .auth-msg.info{background:rgba(30,138,110,0.08);color:var(--green);}
+  .auth-loading{opacity:.6;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><span class="mark">P</span>Prova Final</div>
+    <h2 id="auth-title">Entrar na sua conta</h2>
+    <p class="sub" id="auth-sub">Continue de onde você parou.</p>
+
+    <div class="auth-msg" id="auth-msg"></div>
+
+    <form id="auth-form">
+      <div class="auth-field">
+        <label>E-mail</label>
+        <input type="email" id="auth-email" required autocomplete="email">
+      </div>
+      <div class="auth-field">
+        <label>Senha</label>
+        <input type="password" id="auth-password" required autocomplete="current-password" minlength="6">
+      </div>
+      <button type="submit" class="btn btn-primary" id="auth-submit">Entrar</button>
+    </form>
+
+    <div class="auth-toggle">
+      <span id="auth-toggle-text">Ainda não tem conta?</span>
+      <a id="auth-toggle-link">Criar conta</a>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL (escondido até login) -->
+<div class="layout" id="app-shell" style="display:none;">
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-logo"><span class="mark">P</span>Prova Final</div>
+    <nav class="sb-nav">
+      <div class="sb-item active" data-page="dashboard">📊 Dashboard</div>
+      <div class="sb-item" data-page="notificacoes">🔔 Notificações</div>
+      <div class="sb-item" data-page="questoes">📚 Banco de questões</div>
+      <div class="sb-item" data-page="simulados">⏱️ Simulados</div>
+      <div class="sb-item" data-page="raiox">📈 Raio-X <span class="lock">🔒</span></div>
+      <div class="sb-item" data-page="cadernos">📑 Cadernos</div>
+      <div class="sb-item" data-page="ranking">🏆 Ranking</div>
+      <div class="sb-item" data-page="perfil">👤 Meu perfil</div>
+    </nav>
+    <div class="sb-foot">
+      <div class="sb-plan">
+        <div class="avatar" id="sb-avatar">--</div>
+        <div>
+          <div class="name" id="sb-name">Carregando...</div>
+          <div class="plan-tag" id="sb-plan">--</div>
+        </div>
+      </div>
+      <div class="sb-item" id="btn-logout" style="margin-top:8px;">↪ Sair</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="topbar">
+        <div>
+          <h1 id="dash-greeting">Olá 👋</h1>
+          <div class="sub" id="dash-sub">Carregando seus dados...</div>
+        </div>
+        <div class="top-actions">
+          <div class="icon-btn" id="btn-notif-bell" style="cursor:pointer;">🔔<span class="badge-dot" id="notif-dot" style="display:none;"></span></div>
+        </div>
+      </div>
+
+      <div id="banner-container"></div>
+
+      <div class="stat-row">
+        <div class="stat-card"><div class="label">Respondidas</div><div class="value" id="stat-respondidas">--</div></div>
+        <div class="stat-card"><div class="label">% de acerto</div><div class="value" id="stat-acerto">--</div></div>
+        <div class="stat-card"><div class="label">Pontos</div><div class="value" id="stat-pontos">--</div></div>
+        <div class="stat-card"><div class="label">Sequência</div><div class="value" id="stat-streak">--</div></div>
+      </div>
+
+      <div class="panel">
+        <h3>Ranking mensal — top 5</h3>
+        <div id="ranking-mini"></div>
+      </div>
+    </div>
+
+    <!-- NOTIFICACOES -->
+    <div class="page" id="page-notificacoes">
+      <div class="topbar"><div><h1>Notificações</h1><div class="sub">Avisos e novidades da plataforma</div></div></div>
+      <div id="notif-list-aluno"></div>
+    </div>
+
+    <!-- QUESTOES -->
+    <div class="page" id="page-questoes">
+      <div class="topbar">
+        <div><h1>Banco de questões</h1><div class="sub" id="q-total-sub">Carregando...</div></div>
+        <div class="top-actions"><button class="btn btn-ghost" id="btn-toggle-sugestao">💡 Sugerir questão</button></div>
+      </div>
+
+      <div class="panel" id="sugestao-form" style="display:none;margin-bottom:18px;">
+        <h3>Sugerir uma questão</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+          <select id="sug-area">
+            <option value="">Área *</option>
+            <option>Clínica Médica</option><option>Cirurgia</option><option>GO</option>
+            <option>Pediatria</option><option>Medicina de Família e Comunidade</option>
+            <option>Saúde Coletiva/Preventiva</option>
+          </select>
+          <input type="text" id="sug-tema" placeholder="Tema (opcional)">
+          <textarea id="sug-enunciado" placeholder="Enunciado da questão *" style="min-height:70px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13.5px;"></textarea>
+          <div id="sug-opcoes-wrap" style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:8px;align-items:center;"><span class="letter" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">A</span><input type="text" class="sug-opcao" placeholder="Alternativa A" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;align-items:center;"><span class="letter" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">B</span><input type="text" class="sug-opcao" placeholder="Alternativa B" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;align-items:center;"><span class="letter" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">C</span><input type="text" class="sug-opcao" placeholder="Alternativa C" style="flex:1;"></div>
+            <div style="display:flex;gap:8px;align-items:center;"><span class="letter" style="width:22px;height:22px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">D</span><input type="text" class="sug-opcao" placeholder="Alternativa D" style="flex:1;"></div>
+          </div>
+          <select id="sug-gabarito">
+            <option value="">Gabarito *</option>
+            <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option>
+          </select>
+          <textarea id="sug-justificativa" placeholder="Justificativa (opcional)" style="min-height:50px;padding:10px;border:1px solid var(--line);border-radius:8px;font-family:inherit;font-size:13.5px;"></textarea>
+          <div class="btn-row" style="justify-content:flex-end;">
+            <button class="btn btn-primary" id="btn-enviar-sugestao">Enviar sugestão pra revisão</button>
+          </div>
+          <span style="font-size:11.5px;color:var(--ink-soft);">Toda sugestão passa por revisão clínica antes de entrar no banco — não fica visível automaticamente.</span>
+        </div>
+      </div>
+
+      <div class="filters">
+        <select id="filter-area"><option value="">Todas as áreas</option></select>
+        <select disabled><option>Banca 🔒</option></select>
+        <select disabled><option>Instituição 🔒</option></select>
+        <select disabled><option>Ano 🔒</option></select>
+      </div>
+
+      <div id="q-container"><!-- preenchido via JS --></div>
+      <div class="q-actions" style="margin-top:8px;">
+        <span class="sub" id="q-position-sub" style="font-size:12.5px;"></span>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="next-q" disabled>Próxima questão →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULADOS -->
+    <div class="page" id="page-simulados">
+      <div class="topbar"><div><h1>Simulados</h1><div class="sub">Cronometrados, com resultado por área ao final</div></div></div>
+      <div class="grid-sim" style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;">
+        <div class="panel"><h3>Simulado ENAMED — Bloco 1</h3><p class="sub" style="margin-bottom:14px;">90 questões · 3h00 · Trial liberado</p><a class="btn btn-primary">Iniciar simulado</a></div>
+        <div class="panel"><h3>Simulado USP — Completo</h3><p class="sub" style="margin-bottom:14px;">100 questões · 4h00 · 🔒 Plano Premium+</p><a class="btn btn-ghost">Assinar para liberar</a></div>
+      </div>
+    </div>
+
+    <!-- RAIO-X (gated) -->
+    <div class="page" id="page-raiox">
+      <div class="topbar"><div><h1>Raio-X de incidência</h1><div class="sub">Temas mais cobrados por banca e área</div></div></div>
+      <div class="upsell-card">
+        <div class="emoji">🔒</div>
+        <h3>Exclusivo do plano Ilimitada</h3>
+        <p>Veja quais temas mais caem em cada banca e direcione seus estudos com precisão.</p>
+        <a class="btn btn-green">Fazer upgrade para Ilimitada</a>
+      </div>
+    </div>
+
+    <!-- CADERNOS -->
+    <div class="page" id="page-cadernos">
+      <div class="topbar"><div><h1>Meus cadernos</h1><div class="sub">Coleções de questões que você salvou</div></div></div>
+      <div class="panel"><h3>📁 Revisar antes da prova (24 questões)</h3></div>
+      <div class="panel"><h3>📁 Errei e quero rever (61 questões)</h3></div>
+    </div>
+
+    <!-- RANKING -->
+    <div class="page" id="page-ranking">
+      <div class="topbar"><div><h1>Ranking mensal</h1><div class="sub">Atualizado diariamente às 00h</div></div></div>
+      <div class="panel"><div id="ranking-full"></div></div>
+    </div>
+
+    <!-- PERFIL -->
+    <div class="page" id="page-perfil">
+      <div class="topbar"><div><h1>Meu perfil</h1><div class="sub">Dados de cadastro e preferências</div></div></div>
+      <div class="panel" style="max-width:480px;">
+        <h3>Dados pessoais</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <input type="text" id="perfil-nome" value="" style="width:100%;" placeholder="Seu nome">
+          <input type="text" id="perfil-email" value="" style="width:100%;" disabled>
+          <input type="text" id="perfil-telefone" value="" style="width:100%;" placeholder="Telefone">
+          <input type="text" id="perfil-concurso" value="" style="width:100%;" placeholder="Concurso-alvo">
+          <a class="btn btn-primary" id="btn-salvar-perfil" style="margin-top:6px;width:fit-content;">Salvar alterações</a>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="toast" id="toast">✓ Resposta registrada</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="document.getElementById('auth-msg').className='auth-msg show error';document.getElementById('auth-msg').textContent='Não consegui carregar a biblioteca do Supabase (CDN). Verifique sua conexão e recarregue a página.';"></script>
+<script>
+// ============================================================
+// CONEXÃO REAL COM SUPABASE
+// ============================================================
+const SUPA_URL = 'https://xkaptgdauxapvjzbpkjl.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhrYXB0Z2RhdXhhcHZqemJwa2psIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNDc0OTQsImV4cCI6MjA5NzkyMzQ5NH0.0vkVqUVS0ErbmkcQ7ntVB44T2p5lLEcDMqrjAgV8a88';
+
+window.addEventListener('error', (e) => {
+  const el = document.getElementById('auth-msg');
+  if (el) {
+    el.className = 'auth-msg show error';
+    el.textContent = 'Erro inesperado: ' + (e.message || 'veja o console (F12) para detalhes.');
+  }
+});
+
+const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
+
+const PLAN_LABELS = {
+  free: 'Plano Free',
+  qbank_anual: 'Banco de Questões',
+  qbank_vitalicio: 'Banco de Questões (vitalício)',
+  premium_anual: 'Plano Premium',
+  premium_vitalicio: 'Plano Premium (vitalício)',
+  ilimitada_anual: 'Plano Ilimitada',
+  ilimitada_vitalicia: 'Plano Ilimitada (vitalício)',
+};
+
+let currentQuestions = [];
+let currentIndex = 0;
+let answeredCurrent = false;
+
+function initials(name){
+  if (!name) return '--';
+  return name.trim().split(' ').map(p => p[0]).slice(0, 2).join('').toUpperCase();
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ---- AUTH SCREEN: toggle entre login e criar conta ----
+let authMode = 'login'; // 'login' | 'signup'
+
+function setAuthMode(mode){
+  authMode = mode;
+  const isLogin = mode === 'login';
+  document.getElementById('auth-title').textContent = isLogin ? 'Entrar na sua conta' : 'Criar sua conta';
+  document.getElementById('auth-sub').textContent = isLogin ? 'Continue de onde você parou.' : 'Comece a treinar para a residência.';
+  document.getElementById('auth-submit').textContent = isLogin ? 'Entrar' : 'Criar conta';
+  document.getElementById('auth-toggle-text').textContent = isLogin ? 'Ainda não tem conta?' : 'Já tem conta?';
+  document.getElementById('auth-toggle-link').textContent = isLogin ? 'Criar conta' : 'Entrar';
+  hideAuthMsg();
+}
+
+document.getElementById('auth-toggle-link').addEventListener('click', () => {
+  setAuthMode(authMode === 'login' ? 'signup' : 'login');
+});
+
+function showAuthMsg(text, type){
+  const el = document.getElementById('auth-msg');
+  el.textContent = text;
+  el.className = 'auth-msg show ' + type;
+}
+function hideAuthMsg(){
+  document.getElementById('auth-msg').className = 'auth-msg';
+}
+
+document.getElementById('auth-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  hideAuthMsg();
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const card = document.querySelector('.auth-card');
+  card.classList.add('auth-loading');
+
+  try {
+    if (authMode === 'login') {
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // onAuthStateChange cuida de mostrar o app
+    } else {
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if (error) throw error;
+      if (!data.session) {
+        showAuthMsg('Conta criada! Verifique seu e-mail para confirmar antes de entrar.', 'info');
+        setAuthMode('login');
+      }
+      // se já vier sessão (confirmação de e-mail desligada), onAuthStateChange mostra o app
+    }
+  } catch (err) {
+    const msg = (err.message || '').toLowerCase();
+    let friendly = err.message || 'Algo deu errado. Tente novamente.';
+    if (msg.includes('invalid login credentials')) friendly = 'E-mail ou senha incorretos.';
+    else if (msg.includes('user already registered')) friendly = 'Esse e-mail já tem conta — tente entrar.';
+    else if (msg.includes('email not confirmed')) friendly = 'Confirme seu e-mail antes de entrar.';
+    else if (msg.includes('password')) friendly = 'A senha precisa ter pelo menos 6 caracteres.';
+    showAuthMsg(friendly, 'error');
+  } finally {
+    card.classList.remove('auth-loading');
+  }
+});
+
+document.getElementById('btn-logout').addEventListener('click', async () => {
+  await sb.auth.signOut();
+});
+
+// ---- troca entre tela de login e app conforme sessão ----
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    document.getElementById('auth-screen').style.display = 'none';
+    document.getElementById('app-shell').style.display = 'grid';
+    initApp(session);
+  } else {
+    document.getElementById('app-shell').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+});
+
+// ---- inicialização do app depois do login ----
+let appInitialized = false;
+async function initApp(session){
+  // claim_entitlements: aplica qualquer compra feita antes de criar a conta
+  await sb.rpc('claim_entitlements');
+
+  await loadProfile(session.user); // banner depende do plano, então espera primeiro
+  await Promise.all([
+    loadDashboard(),
+    loadQuestions(),
+    loadRanking(),
+    loadBanner(),
+    loadNotificacoesAluno(),
+  ]);
+  appInitialized = true;
+}
+
+async function loadProfile(user){
+  const { data: profile, error } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if (error || !profile) {
+    console.error('Erro carregando profile:', error);
+    return;
+  }
+  const name = profile.name || profile.email || 'Aluno';
+  window.MY_PROFILE = profile;
+  document.getElementById('sb-name').textContent = name;
+  document.getElementById('sb-plan').textContent = PLAN_LABELS[profile.plan] || profile.plan;
+  document.getElementById('sb-avatar').textContent = initials(name);
+  document.getElementById('dash-greeting').textContent = `Olá, ${profile.name ? profile.name.split(' ')[0] : 'aluno'} 👋`;
+
+  // perfil
+  document.getElementById('perfil-nome').value = profile.name || '';
+  document.getElementById('perfil-email').value = profile.email || '';
+  document.getElementById('perfil-telefone').value = profile.phone || '';
+  document.getElementById('perfil-concurso').value = profile.concurso_alvo || '';
+}
+
+document.getElementById('btn-salvar-perfil').addEventListener('click', async () => {
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+  const { error } = await sb.from('profiles').update({
+    name: document.getElementById('perfil-nome').value.trim(),
+    phone: document.getElementById('perfil-telefone').value.trim(),
+    concurso_alvo: document.getElementById('perfil-concurso').value.trim(),
+  }).eq('id', user.id);
+  if (error) {
+    showToast('Erro ao salvar: ' + error.message);
+  } else {
+    showToast('✓ Perfil atualizado');
+    loadProfile(user);
+  }
+});
+
+// ---- dashboard ----
+async function loadDashboard(){
+  const { data, error } = await sb.rpc('get_my_stats');
+  if (error) { console.error('get_my_stats:', error); return; }
+  const s = (data && data[0]) || { respondidas: 0, corretas: 0, pct_acerto: 0, pontos: 0, streak_dias: 0 };
+  document.getElementById('stat-respondidas').textContent = s.respondidas;
+  document.getElementById('stat-acerto').textContent = s.respondidas > 0 ? `${s.pct_acerto}%` : '--';
+  document.getElementById('stat-pontos').textContent = s.pontos ?? 0;
+  document.getElementById('stat-streak').textContent = `${s.streak_dias ?? 0} 🔥`;
+  document.getElementById('dash-sub').textContent = s.respondidas > 0
+    ? `Você já respondeu ${s.respondidas} questões. Continue assim!`
+    : 'Responda sua primeira questão pra começar a acompanhar seu progresso.';
+}
+
+// ---- banner do dashboard (real, respeitando planos_alvo) ----
+function planCategoria(plan){
+  if (!plan || plan === 'free') return 'free';
+  if (plan.startsWith('qbank')) return 'qbank';
+  if (plan.startsWith('premium')) return 'premium';
+  if (plan.startsWith('ilimitada')) return 'ilimitada';
+  return 'free';
+}
+
+async function loadBanner(){
+  const { data, error } = await sb.from('banners').select('*')
+    .eq('ativo', true).in('posicao', ['dashboard', 'todas']).order('ordem');
+  const container = document.getElementById('banner-container');
+  if (error || !data || !data.length) { container.innerHTML = ''; return; }
+
+  const myCategoria = planCategoria(window.MY_PROFILE?.plan);
+  const match = data.find(b => !b.planos_alvo || b.planos_alvo.length === 0 || b.planos_alvo.includes(myCategoria));
+  if (!match) { container.innerHTML = ''; return; }
+
+  container.innerHTML = `
+    <div class="banner" style="${match.cor_fundo ? `background:${match.cor_fundo};` : ''}">
+      <div style="display:flex;gap:14px;align-items:center;">
+        <span class="emoji">${match.emoji || '🚀'}</span>
+        <div>
+          <h3 style="${match.cor_texto ? `color:${match.cor_texto};` : ''}">${match.titulo}</h3>
+          ${match.descricao ? `<p style="${match.cor_texto ? `color:${match.cor_texto};` : ''}">${match.descricao}</p>` : ''}
+        </div>
+      </div>
+      ${match.cta_url ? `<a class="btn btn-green" href="${match.cta_url}" target="_blank" style="${match.cor_btn ? `background:${match.cor_btn};` : ''}">${match.cta_texto || 'Ver oferta →'}</a>` : ''}
+    </div>
+  `;
+}
+
+// ---- notificações do aluno (RLS já filtra por destinatário/plano) ----
+document.getElementById('btn-notif-bell').addEventListener('click', () => goPageApp('notificacoes'));
+
+function goPageApp(name){
+  document.querySelectorAll('.sb-item[data-page]').forEach(i => i.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.sb-item[data-page="${name}"]`)?.classList.add('active');
+  document.getElementById('page-' + name)?.classList.add('active');
+}
+
+async function loadNotificacoesAluno(){
+  const { data, error } = await sb.from('notificacoes').select('*')
+    .eq('ativo', true).order('created_at', { ascending: false }).limit(30);
+  const list = document.getElementById('notif-list-aluno');
+  const dot = document.getElementById('notif-dot');
+  if (error) { list.innerHTML = `<div class="panel">Erro: ${error.message}</div>`; return; }
+  if (!data || !data.length) {
+    list.innerHTML = `<div class="panel" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhuma notificação por aqui ainda.</div>`;
+    dot.style.display = 'none';
+    return;
+  }
+  dot.style.display = 'block';
+  list.innerHTML = data.map(n => `
+    <div class="panel" style="padding:16px;display:flex;gap:12px;align-items:flex-start;">
+      <span style="font-size:22px;">${n.emoji || '🔔'}</span>
+      <div style="flex:1;">
+        <div style="font-weight:600;font-size:14px;color:var(--navy);">${n.titulo}</div>
+        <div style="font-size:13px;color:var(--ink-soft);margin-top:3px;">${n.mensagem}</div>
+        ${n.url ? `<a href="${n.url}" target="_blank" style="font-size:12.5px;color:var(--green);font-weight:600;display:inline-block;margin-top:6px;">${n.url_texto || 'Ver mais →'}</a>` : ''}
+        <div style="font-size:11px;color:var(--ink-soft);margin-top:6px;">${new Date(n.created_at).toLocaleDateString('pt-BR')}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ---- sugerir questão ----
+document.getElementById('btn-toggle-sugestao').addEventListener('click', () => {
+  const form = document.getElementById('sugestao-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+});
+
+document.getElementById('btn-enviar-sugestao').addEventListener('click', async () => {
+  const area = document.getElementById('sug-area').value;
+  const enunciado = document.getElementById('sug-enunciado').value.trim();
+  const gabarito = document.getElementById('sug-gabarito').value;
+  const letras = ['A', 'B', 'C', 'D'];
+  const opcoes = [...document.querySelectorAll('.sug-opcao')]
+    .map((inp, i) => ({ letra: letras[i], texto: inp.value.trim() }))
+    .filter(o => o.texto);
+
+  if (!area || !enunciado || !gabarito || opcoes.length < 2) {
+    showToast('Preencha área, enunciado, ao menos 2 alternativas e o gabarito.');
+    return;
+  }
+
+  const { data: { user } } = await sb.auth.getUser();
+  const { error } = await sb.from('question_suggestions').insert({
+    user_id: user.id,
+    area,
+    tema: document.getElementById('sug-tema').value.trim() || null,
+    enunciado,
+    opcoes,
+    gabarito,
+    justificativa: document.getElementById('sug-justificativa').value.trim() || null,
+  });
+
+  if (error) { showToast('Erro ao enviar: ' + error.message); return; }
+  showToast('✓ Sugestão enviada! Vai passar por revisão antes de entrar no banco.');
+  document.getElementById('sugestao-form').style.display = 'none';
+  ['sug-area', 'sug-tema', 'sug-enunciado', 'sug-gabarito', 'sug-justificativa'].forEach(id => document.getElementById(id).value = '');
+  document.querySelectorAll('.sug-opcao').forEach(inp => inp.value = '');
+});
+
+// ---- banco de questões ----
+async function loadQuestions(){
+  const { data, error } = await sb.from('questions_aluno').select('*').order('id');
+  if (error) {
+    document.getElementById('q-container').innerHTML = `<div class="panel">Erro ao carregar questões: ${error.message}</div>`;
+    return;
+  }
+  currentQuestions = data || [];
+  document.getElementById('q-total-sub').textContent = `${currentQuestions.length} questões disponíveis`;
+  populateAreaFilter();
+  currentIndex = 0;
+  renderCurrentQuestion();
+}
+
+function populateAreaFilter(){
+  const sel = document.getElementById('filter-area');
+  const areas = [...new Set(currentQuestions.map(q => q.area))].sort();
+  sel.innerHTML = '<option value="">Todas as áreas</option>' +
+    areas.map(a => `<option value="${a}">${a}</option>`).join('');
+}
+
+document.getElementById('filter-area').addEventListener('change', (e) => {
+  const area = e.target.value;
+  currentIndex = 0;
+  renderCurrentQuestion(area || null);
+});
+
+let filteredQuestions = null;
+function getActiveList(){
+  return filteredQuestions || currentQuestions;
+}
+
+function renderCurrentQuestion(filterArea){
+  if (filterArea !== undefined) {
+    filteredQuestions = filterArea ? currentQuestions.filter(q => q.area === filterArea) : null;
+  }
+  const list = getActiveList();
+  const container = document.getElementById('q-container');
+  const posSub = document.getElementById('q-position-sub');
+  const nextBtn = document.getElementById('next-q');
+
+  if (list.length === 0) {
+    container.innerHTML = `<div class="panel">Nenhuma questão encontrada com esse filtro.</div>`;
+    posSub.textContent = '';
+    nextBtn.disabled = true;
+    return;
+  }
+  if (currentIndex >= list.length) currentIndex = 0;
+
+  const q = list[currentIndex];
+  answeredCurrent = false;
+  nextBtn.disabled = true;
+
+  const letras = ['A', 'B', 'C', 'D', 'E'];
+  const opcoesHtml = (q.opcoes || []).map(o => `
+    <div class="opt" data-letra="${o.letra}">
+      <span class="letter">${o.letra}</span> ${o.texto}
+    </div>
+  `).join('');
+
+  container.innerHTML = `
+    <div class="q-card">
+      <div class="q-meta">
+        <span class="tag area">${q.area}</span>
+        ${q.tema ? `<span class="tag">${q.tema}</span>` : ''}
+        ${q.banca ? `<span class="tag">${q.banca}</span>` : ''}
+      </div>
+      ${q.imagem_url ? `<div class="q-img"><img src="${q.imagem_url}" alt=""></div>` : ''}
+      <p class="q-text">${q.enunciado}</p>
+      ${opcoesHtml}
+      <div class="feedback" id="feedback-current"></div>
+    </div>
+  `;
+  posSub.textContent = `Questão ${currentIndex + 1} de ${list.length}`;
+
+  container.querySelectorAll('.opt').forEach(opt => {
+    opt.addEventListener('click', () => handleAnswer(q, opt));
+  });
+}
+
+async function handleAnswer(question, optEl){
+  if (answeredCurrent) return;
+  answeredCurrent = true;
+
+  const resposta = optEl.dataset.letra;
+  const { data, error } = await sb.rpc('record_answer', {
+    p_question_id: question.id,
+    p_resposta: resposta,
+  });
+
+  if (error) {
+    showToast('Erro ao registrar resposta: ' + error.message);
+    answeredCurrent = false;
+    return;
+  }
+
+  const result = data[0];
+  const container = document.getElementById('q-container');
+  container.querySelectorAll('.opt').forEach(o => {
+    o.classList.add('disabled');
+    if (o.dataset.letra === result.gabarito) o.classList.add('correct');
+    else if (o === optEl) o.classList.add('wrong');
+  });
+  optEl.classList.add('selected');
+
+  const fb = document.getElementById('feedback-current');
+  fb.classList.add('show', result.correta ? 'correct-fb' : 'wrong-fb');
+  fb.innerHTML = `<strong>${result.correta ? '✓ Resposta correta' : '✗ Resposta incorreta'}</strong>${result.justificativa || ''}`;
+
+  document.getElementById('next-q').disabled = false;
+  showToast(result.correta ? '✓ Resposta registrada — acertou!' : '✓ Resposta registrada');
+
+  loadDashboard(); // mantém os números do dashboard sempre atualizados
+}
+
+document.getElementById('next-q').addEventListener('click', () => {
+  const list = getActiveList();
+  currentIndex = (currentIndex + 1) % list.length;
+  renderCurrentQuestion();
+});
+
+// ---- ranking ----
+async function loadRanking(){
+  const { data, error } = await sb.rpc('get_ranking_mensal', { p_limit: 50 });
+  if (error) { console.error('get_ranking_mensal:', error); return; }
+  renderRanking('ranking-mini', data, 5);
+  renderRanking('ranking-full', data, data.length);
+}
+
+function renderRanking(targetId, list, limit){
+  const el = document.getElementById(targetId);
+  if (!list || list.length === 0) {
+    el.innerHTML = `<div class="sub" style="padding:8px 0;">Ainda sem dados suficientes pro ranking.</div>`;
+    return;
+  }
+  el.innerHTML = list.slice(0, limit).map((r, i) => `
+    <div class="ranking-row">
+      <span class="pos">#${i + 1}</span>
+      <span class="av">${initials(r.name)}</span>
+      <span>${r.name || 'Aluno'}</span>
+      <span class="pts">${(r.pontos || 0).toLocaleString('pt-BR')} pts</span>
+    </div>
+  `).join('');
+}
+
+// ---- navegação entre páginas (sidebar) ----
+document.querySelectorAll('.sb-item[data-page]').forEach(item => {
+  item.addEventListener('click', () => {
+    document.querySelectorAll('.sb-item[data-page]').forEach(i => i.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    item.classList.add('active');
+    document.getElementById('page-' + item.dataset.page).classList.add('active');
+    if (item.dataset.page === 'dashboard' && appInitialized) loadDashboard();
+  });
+});
+
+// ---- estado inicial: a auth screen já fica visível por padrão (display:flex no HTML);
+// onAuthStateChange dispara assim que o SDK resolve a sessão (existente ou nenhuma).
+</script>
+
+</body>
+</html>
+
