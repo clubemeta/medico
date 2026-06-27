@@ -299,29 +299,53 @@
 
     <!-- EQUIPE -->
     <div class="page" id="page-equipe">
-      <div class="topbar"><div><h1>Equipe <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa)</div></div>
-        <button class="btn btn-primary" style="margin-top:8px;">+ Convidar colaborador</button>
-      </div>
+      <div class="topbar"><div><h1>Equipe</h1><div class="sub" id="equipe-sub">Carregando...</div></div></div>
+
       <div class="panel"><div class="panel-body">
-        <table>
-          <tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Abas permitidas</th><th></th></tr>
-          <tr><td>Dra. Renata</td><td>renata@provafinal.com.br</td><td>super</td><td>todas</td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
-          <tr><td>Dr. Pedro (revisor)</td><td>pedro@provafinal.com.br</td><td>colaborador</td><td>questões, importador</td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
-        </table>
+        <table id="equipe-table"></table>
+      </div></div>
+
+      <div class="panel"><div class="panel-body" style="padding:20px;max-width:560px;">
+        <h3 style="margin-bottom:14px;">+ Adicionar membro</h3>
+        <div style="font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;line-height:1.6;">
+          A pessoa precisa criar a própria conta (em <code>app.html</code> ou aqui, em "Entrar") usando <strong>este mesmo e-mail</strong> — assim que existir, ela já entra com o papel definido abaixo. Envio automático de e-mail de convite fica para a etapa das Edge Functions.
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <input type="text" id="equipe-email" placeholder="E-mail do colaborador" style="width:100%;">
+          <input type="text" id="equipe-nome" placeholder="Nome" style="width:100%;">
+          <select id="equipe-role" style="width:100%;" onchange="renderTabPicker()">
+            <option value="colaborador">Colaborador (acesso restrito)</option>
+            <option value="super">Super admin (acesso total)</option>
+          </select>
+          <div id="equipe-tabs-wrap">
+            <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:8px;">Abas liberadas</label>
+            <div id="equipe-tabs-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
+          </div>
+          <a class="btn btn-primary" style="margin-top:6px;width:fit-content;" onclick="addEquipeMember()">Adicionar membro</a>
+        </div>
       </div></div>
     </div>
 
     <!-- SETTINGS -->
     <div class="page" id="page-settings">
-      <div class="topbar"><div><h1>Settings <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa) — quando estiver, salva em app_settings, nunca em localStorage</div></div></div>
+      <div class="topbar"><div><h1>Settings</h1><div class="sub">Salvo em app_settings (banco) — nunca em localStorage</div></div></div>
       <div class="panel"><div class="panel-body" style="padding:20px;max-width:480px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Nome da plataforma</label>
+        <input type="text" id="cfg-nome" style="width:100%;margin-bottom:14px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">URL da plataforma</label>
+        <input type="text" id="cfg-url" style="width:100%;margin-bottom:14px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Dias de trial para novos usuários</label>
+        <input type="number" id="cfg-trial" style="width:100%;margin-bottom:14px;">
+        <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">WhatsApp de suporte</label>
+        <input type="text" id="cfg-whatsapp" placeholder="5599999999999" style="width:100%;margin-bottom:14px;">
         <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Meta Pixel ID</label>
-        <input type="text" value="" placeholder="ex: 1234567890" style="width:100%;margin-bottom:14px;">
+        <input type="text" id="cfg-pixel" placeholder="ex: 1234567890" style="width:100%;margin-bottom:14px;">
         <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">E-mail remetente (Resend)</label>
-        <input type="text" value="contato@provafinal.com.br" style="width:100%;margin-bottom:14px;">
+        <input type="text" id="cfg-resend-from" style="width:100%;margin-bottom:14px;">
         <label style="font-size:12.5px;font-weight:600;color:var(--ink-soft);display:block;margin-bottom:6px;">Webhook secret (hottok)</label>
-        <input type="text" value="••••••••••••••••" style="width:100%;margin-bottom:16px;">
-        <button class="btn btn-primary">Salvar configurações</button>
+        <input type="text" id="cfg-hottok" style="width:100%;margin-bottom:16px;">
+        <a class="btn btn-primary" onclick="saveSettings()">Salvar configurações</a>
+        <span id="settings-saved-msg" style="margin-left:10px;font-size:12.5px;color:var(--green);"></span>
       </div></div>
     </div>
 
@@ -419,6 +443,13 @@ sb.auth.onAuthStateChange(async (event, session) => {
     return;
   }
 
+  // busca o papel/abas liberadas (pra colaboradores com acesso restrito)
+  const { data: myAdminRow } = await sb.from('admin_users')
+    .select('role, allowed_tabs')
+    .eq('email', session.user.email)
+    .single();
+  window.ADMIN_ACCESS = myAdminRow || { role: 'super', allowed_tabs: [] };
+
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-shell').style.display = 'grid';
   if (!appInitialized) {
@@ -433,14 +464,35 @@ async function initAdminApp(session){
   const name = profile?.name || profile?.email || session.user.email;
   document.getElementById('sb-name').textContent = name;
   document.getElementById('sb-avatar').textContent = initials(name);
-  document.getElementById('sb-role').textContent = 'admin';
+  document.getElementById('sb-role').textContent = window.ADMIN_ACCESS.role === 'super' ? 'super admin' : 'colaborador';
+
+  applyTabGating();
 
   await Promise.all([
     loadDashboardStats(),
     loadQuestoesAdmin('pendente'),
     loadAlunos(),
     loadProdutos(),
+    loadEquipe(),
+    loadSettings(),
   ]);
+}
+
+// ---- tab gating: colaborador só vê as abas liberadas em admin_users.allowed_tabs ----
+// (igual ao Legora: é conveniência de UI, a autoridade real de escrita continua
+// sendo o is_admin() binário nas policies de RLS — replicando o mesmo modelo de confiança)
+function applyTabGating(){
+  const acc = window.ADMIN_ACCESS || { role: 'super', allowed_tabs: [] };
+  const isColab = acc.role === 'colaborador';
+  document.querySelectorAll('.sb-item[data-page]').forEach(item => {
+    const page = item.dataset.page;
+    const allowed = !isColab || (acc.allowed_tabs || []).includes(page);
+    item.style.display = allowed ? '' : 'none';
+  });
+  if (isColab) {
+    const firstAllowed = (acc.allowed_tabs || [])[0];
+    if (firstAllowed) goPage(firstAllowed);
+  }
 }
 
 // ---- dashboard ----
@@ -606,6 +658,134 @@ async function loadProdutos(){
   });
 }
 
+// ---- equipe / colaboradores ----
+// Abas que podem ser liberadas para colaboradores (equipe/settings ficam só com super admin)
+const ASSIGNABLE_TABS = [
+  ['dashboard', 'Dashboard'], ['alunos', 'Alunos'], ['questoes', 'Questões'],
+  ['importador', 'Importador'], ['simulados', 'Simulados'],
+  ['produtos', 'Produtos'], ['banners', 'Banners'],
+];
+
+function renderTabPicker(){
+  const role = document.getElementById('equipe-role').value;
+  const wrap = document.getElementById('equipe-tabs-wrap');
+  const grid = document.getElementById('equipe-tabs-grid');
+  const isColab = role !== 'super';
+  wrap.style.display = isColab ? 'block' : 'none';
+  if (!isColab) { grid.innerHTML = ''; return; }
+  grid.innerHTML = ASSIGNABLE_TABS.map(([key, label]) => `
+    <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer;">
+      <input type="checkbox" class="equipe-tab-cb" value="${key}"> ${label}
+    </label>
+  `).join('');
+}
+renderTabPicker();
+
+async function loadEquipe(){
+  const { data, error } = await sb.from('admin_users').select('*').order('created_at');
+  const table = document.getElementById('equipe-table');
+  if (error) {
+    table.innerHTML = `<tr><td style="padding:16px;color:var(--red);">Erro: ${error.message}</td></tr>`;
+    return;
+  }
+  document.getElementById('equipe-sub').textContent = `${(data || []).length} membro(s)`;
+  table.innerHTML = `
+    <tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Abas permitidas</th><th>Status</th><th></th></tr>
+    ${(data || []).map(m => `
+      <tr>
+        <td>${m.nome || '—'}</td>
+        <td>${m.email}</td>
+        <td><span class="badge ${m.role === 'super' ? 'ilimitada' : 'premium'}">${m.role}</span></td>
+        <td style="font-size:11.5px;color:var(--ink-soft);">${m.role === 'super' ? 'todas' : ((m.allowed_tabs || []).join(', ') || '—')}</td>
+        <td><span class="badge ${m.active ? 'aprovada' : 'rejeitada'}">${m.active ? 'ativo' : 'inativo'}</span></td>
+        <td class="row-actions">
+          <button class="btn btn-ghost btn-xs" onclick="toggleEquipeMember('${m.email}', ${m.active})">${m.active ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn btn-red btn-xs" onclick="removeEquipeMember('${m.email}')">Remover</button>
+        </td>
+      </tr>
+    `).join('')}
+  `;
+}
+
+async function addEquipeMember(){
+  const email = document.getElementById('equipe-email').value.trim().toLowerCase();
+  const nome = document.getElementById('equipe-nome').value.trim();
+  const role = document.getElementById('equipe-role').value;
+  if (!email || !email.includes('@')) {
+    showToast('Informe um e-mail válido.');
+    return;
+  }
+  let allowed_tabs = [];
+  if (role !== 'super') {
+    allowed_tabs = [...document.querySelectorAll('.equipe-tab-cb:checked')].map(cb => cb.value);
+    if (allowed_tabs.length === 0) {
+      showToast('Selecione ao menos uma aba para o colaborador.');
+      return;
+    }
+  }
+  const { error } = await sb.from('admin_users').upsert(
+    { email, nome: nome || null, role, allowed_tabs, active: true },
+    { onConflict: 'email' }
+  );
+  if (error) {
+    showToast('Erro: ' + error.message);
+    return;
+  }
+  showToast('✓ Membro adicionado — falta a pessoa criar a conta com este e-mail.');
+  document.getElementById('equipe-email').value = '';
+  document.getElementById('equipe-nome').value = '';
+  document.querySelectorAll('.equipe-tab-cb:checked').forEach(cb => cb.checked = false);
+  loadEquipe();
+}
+
+async function toggleEquipeMember(email, atual){
+  const { error } = await sb.from('admin_users').update({ active: !atual }).eq('email', email);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  loadEquipe();
+}
+
+async function removeEquipeMember(email){
+  if (!confirm(`Remover ${email} da equipe? Perde o acesso ao admin imediatamente.`)) return;
+  const { error } = await sb.from('admin_users').delete().eq('email', email);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('Membro removido');
+  loadEquipe();
+}
+
+// ---- settings (persistido em app_settings, nunca em localStorage) ----
+async function loadSettings(){
+  const { data } = await sb.from('app_settings').select('value').eq('key', 'configuracoes_gerais').maybeSingle();
+  const v = data?.value || {};
+  document.getElementById('cfg-nome').value = v.nome_plataforma || 'Prova Final';
+  document.getElementById('cfg-url').value = v.url_plataforma || '';
+  document.getElementById('cfg-trial').value = v.dias_trial ?? 7;
+  document.getElementById('cfg-whatsapp').value = v.whatsapp_suporte || '';
+  document.getElementById('cfg-pixel').value = v.meta_pixel_id || '';
+  document.getElementById('cfg-resend-from').value = v.resend_from_email || '';
+  document.getElementById('cfg-hottok').value = v.hotmart_token || '';
+}
+
+async function saveSettings(){
+  const value = {
+    nome_plataforma: document.getElementById('cfg-nome').value.trim(),
+    url_plataforma: document.getElementById('cfg-url').value.trim(),
+    dias_trial: parseInt(document.getElementById('cfg-trial').value, 10) || 7,
+    whatsapp_suporte: document.getElementById('cfg-whatsapp').value.trim(),
+    meta_pixel_id: document.getElementById('cfg-pixel').value.trim(),
+    resend_from_email: document.getElementById('cfg-resend-from').value.trim(),
+    hotmart_token: document.getElementById('cfg-hottok').value.trim(),
+  };
+  const { error } = await sb.from('app_settings').upsert(
+    { key: 'configuracoes_gerais', value, updated_at: new Date().toISOString() },
+    { onConflict: 'key' }
+  );
+  const msg = document.getElementById('settings-saved-msg');
+  if (error) { showToast('Erro: ' + error.message); return; }
+  msg.textContent = '✓ salvo';
+  showToast('✓ Configurações salvas no banco — aparecem em qualquer aparelho');
+  setTimeout(() => { msg.textContent = ''; }, 2500);
+}
+
 // ---- importador (ainda preview — sem conexão real) ----
 function simulateImport(){
   document.getElementById('import-report').style.display = 'block';
@@ -619,6 +799,11 @@ document.querySelectorAll('#page-simulados .toggle, #page-banners .toggle').forE
 
 // ---- navegação sidebar ----
 function goPage(name){
+  const acc = window.ADMIN_ACCESS || { role: 'super', allowed_tabs: [] };
+  if (acc.role === 'colaborador' && !(acc.allowed_tabs || []).includes(name)) {
+    showToast('Você não tem acesso a esta aba.');
+    return;
+  }
   document.querySelectorAll('.sb-item[data-page]').forEach(i => i.classList.remove('active'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.querySelector(`.sb-item[data-page="${name}"]`).classList.add('active');
