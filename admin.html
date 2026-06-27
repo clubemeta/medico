@@ -107,6 +107,28 @@
   }
   .toast.show{transform:translateY(0);opacity:1;}
 
+  /* ---- modal genérico ---- */
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(15,42,74,0.45);z-index:200;
+    display:none;align-items:center;justify-content:center;padding:20px;
+  }
+  .modal-bg.show{display:flex;}
+  .modal-box{
+    background:var(--white);border-radius:14px;padding:24px;max-width:540px;width:100%;
+    max-height:88vh;overflow-y:auto;
+  }
+  .modal-box h3{font-size:16px;color:var(--navy);font-weight:600;margin-bottom:16px;}
+  .field-row{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;}
+  .field-row label{font-size:11.5px;font-weight:600;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+  .field-row input, .field-row select, .field-row textarea{
+    padding:8px 11px;border:1px solid var(--line);border-radius:7px;font-size:13.5px;font-family:inherit;width:100%;
+  }
+  .field-row textarea{resize:vertical;min-height:64px;}
+  .field-grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .checkbox-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin-top:4px;}
+  .checkbox-grid label{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;color:var(--ink);text-transform:none;cursor:pointer;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);}
+
   .tabs-row{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;}
   .tab-btn{padding:9px 16px;font-size:13px;font-weight:600;color:var(--ink-soft);cursor:pointer;border-bottom:2px solid transparent;}
   .tab-btn.active{color:var(--navy);border-color:var(--navy);}
@@ -163,12 +185,14 @@
 
       <div class="sb-group">Conteúdo</div>
       <div class="sb-item" data-page="questoes">📚 Questões <span class="count warn" id="sb-pend-count" style="display:none;"></span></div>
+      <div class="sb-item" data-page="sugestoes">💡 Sugestões <span class="count warn" id="sb-sug-count" style="display:none;"></span></div>
       <div class="sb-item" data-page="importador">⬆️ Importador</div>
       <div class="sb-item" data-page="simulados">⏱️ Simulados</div>
 
       <div class="sb-group">Comercial</div>
       <div class="sb-item" data-page="produtos">🛒 Produtos / Catálogo</div>
       <div class="sb-item" data-page="banners">📣 Banners</div>
+      <div class="sb-item" data-page="notificacoes">🔔 Notificações</div>
 
       <div class="sb-group">Sistema</div>
       <div class="sb-item" data-page="equipe">👥 Equipe</div>
@@ -286,15 +310,33 @@
 
     <!-- BANNERS -->
     <div class="page" id="page-banners">
-      <div class="topbar"><div><h1>Banners <span class="badge pendente">preview</span></h1><div class="sub">Ainda não conectado ao banco (próxima etapa)</div></div>
-        <button class="btn btn-primary" style="margin-top:8px;">+ Novo banner</button>
+      <div class="topbar"><div><h1>Banners</h1><div class="sub" id="banners-sub">Carregando...</div></div>
+        <button class="btn btn-primary" style="margin-top:8px;" onclick="openBannerModal()">+ Novo banner</button>
       </div>
       <div class="panel"><div class="panel-body">
-        <table>
-          <tr><th>Título</th><th>Posição</th><th>Planos-alvo</th><th>Ativo</th><th></th></tr>
-          <tr><td>Reta Final de Cirurgia já disponível</td><td>dashboard</td><td>free, qbank</td><td><span class="toggle on"><span class="knob"></span></span></td><td><button class="btn btn-ghost btn-xs">Editar</button></td></tr>
-        </table>
+        <table id="banners-table"></table>
       </div></div>
+    </div>
+
+    <!-- NOTIFICAÇÕES -->
+    <div class="page" id="page-notificacoes">
+      <div class="topbar"><div><h1>Notificações</h1><div class="sub" id="notif-sub">Carregando...</div></div>
+        <button class="btn btn-primary" style="margin-top:8px;" onclick="openNotifModal()">+ Nova notificação</button>
+      </div>
+      <div class="panel"><div class="panel-body">
+        <table id="notif-table"></table>
+      </div></div>
+    </div>
+
+    <!-- SUGESTÕES -->
+    <div class="page" id="page-sugestoes">
+      <div class="topbar"><div><h1>Sugestões de questões</h1><div class="sub" id="sug-sub">Carregando...</div></div></div>
+      <div class="tabs-row">
+        <div class="tab-btn active" data-sugtab="pendente">Pendentes</div>
+        <div class="tab-btn" data-sugtab="aprovada">Aprovadas</div>
+        <div class="tab-btn" data-sugtab="rejeitada">Rejeitadas</div>
+      </div>
+      <div id="sug-list" style="display:flex;flex-direction:column;gap:12px;"></div>
     </div>
 
     <!-- EQUIPE -->
@@ -353,6 +395,75 @@
 </div>
 
 <div class="toast" id="toast">✓ Salvo</div>
+
+<!-- MODAL BANNER -->
+<div class="modal-bg" id="modal-banner" onclick="if(event.target===this) closeModal('modal-banner')">
+  <div class="modal-box">
+    <h3 id="banner-modal-title">Novo banner</h3>
+    <input type="hidden" id="bn-id">
+    <div class="field-grid2">
+      <div class="field-row"><label>Emoji</label><input type="text" id="bn-emoji" value="🎯" maxlength="4"></div>
+      <div class="field-row"><label>Posição</label>
+        <select id="bn-posicao">
+          <option value="dashboard">Dashboard</option>
+          <option value="retas">Retas Finais</option>
+          <option value="todas">Em todas</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row"><label>Título</label><input type="text" id="bn-titulo" placeholder="Ex: Reta Final disponível"></div>
+    <div class="field-row"><label>Descrição</label><textarea id="bn-descricao" placeholder="Texto do banner"></textarea></div>
+    <div class="field-grid2">
+      <div class="field-row"><label>Texto do botão</label><input type="text" id="bn-cta-texto" value="Ver oferta →"></div>
+      <div class="field-row"><label>Link do botão</label><input type="text" id="bn-cta-url" placeholder="https://..."></div>
+    </div>
+    <div class="field-row">
+      <label>Mostrar para</label>
+      <div class="checkbox-grid">
+        <label><input type="checkbox" class="bn-plano-cb" value="free"> Free</label>
+        <label><input type="checkbox" class="bn-plano-cb" value="qbank"> Banco de Questões</label>
+        <label><input type="checkbox" class="bn-plano-cb" value="premium"> Premium</label>
+        <label><input type="checkbox" class="bn-plano-cb" value="ilimitada"> Ilimitada</label>
+      </div>
+      <span style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Nenhum marcado = mostra pra todos os planos.</span>
+    </div>
+    <div class="field-grid2">
+      <div class="field-row"><label>Ordem</label><input type="number" id="bn-ordem" value="0"></div>
+      <div class="field-row"><label style="text-transform:none;display:flex;align-items:center;gap:6px;margin-top:18px;"><input type="checkbox" id="bn-ativo" checked> Ativo</label></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-banner')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBanner()">Salvar banner</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTIFICAÇÃO -->
+<div class="modal-bg" id="modal-notif" onclick="if(event.target===this) closeModal('modal-notif')">
+  <div class="modal-box">
+    <h3>Nova notificação</h3>
+    <div class="field-grid2">
+      <div class="field-row"><label>Emoji</label><input type="text" id="nt-emoji" value="🔔" maxlength="4"></div>
+      <div class="field-row"><label>Destinatário</label>
+        <select id="nt-destinatario">
+          <option value="todos">Todos os alunos</option>
+          <option value="free">Somente gratuitos</option>
+          <option value="pagantes">Somente pagantes</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row"><label>Título</label><input type="text" id="nt-titulo" placeholder="Ex: Nova reta final disponível!"></div>
+    <div class="field-row"><label>Mensagem</label><textarea id="nt-mensagem" placeholder="Texto da notificação"></textarea></div>
+    <div class="field-grid2">
+      <div class="field-row"><label>Link (opcional)</label><input type="text" id="nt-url" placeholder="https://..."></div>
+      <div class="field-row"><label>Texto do link</label><input type="text" id="nt-url-texto" value="Ver mais →"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-notif')">Cancelar</button>
+      <button class="btn btn-primary" onclick="sendNotificacao()">Enviar notificação</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="document.getElementById('auth-msg').className='auth-msg show error';document.getElementById('auth-msg').textContent='Não consegui carregar a biblioteca do Supabase (CDN). Verifique sua conexão e recarregue a página.';"></script>
 <script>
@@ -475,6 +586,9 @@ async function initAdminApp(session){
     loadProdutos(),
     loadEquipe(),
     loadSettings(),
+    loadBanners(),
+    loadNotificacoes(),
+    loadSugestoes('pendente'),
   ]);
 }
 
@@ -662,8 +776,8 @@ async function loadProdutos(){
 // Abas que podem ser liberadas para colaboradores (equipe/settings ficam só com super admin)
 const ASSIGNABLE_TABS = [
   ['dashboard', 'Dashboard'], ['alunos', 'Alunos'], ['questoes', 'Questões'],
-  ['importador', 'Importador'], ['simulados', 'Simulados'],
-  ['produtos', 'Produtos'], ['banners', 'Banners'],
+  ['sugestoes', 'Sugestões'], ['importador', 'Importador'], ['simulados', 'Simulados'],
+  ['produtos', 'Produtos'], ['banners', 'Banners'], ['notificacoes', 'Notificações'],
 ];
 
 function renderTabPicker(){
@@ -786,14 +900,269 @@ async function saveSettings(){
   setTimeout(() => { msg.textContent = ''; }, 2500);
 }
 
-// ---- importador (ainda preview — sem conexão real) ----
+// ---- modal genérico ----
+function closeModal(id){
+  document.getElementById(id).classList.remove('show');
+}
+function openModal(id){
+  document.getElementById(id).classList.add('show');
+}
+
+// ---- banners ----
+let BANNERS_CACHE = [];
+
+async function loadBanners(){
+  const { data, error } = await sb.from('banners').select('*').order('ordem');
+  const table = document.getElementById('banners-table');
+  if (error) {
+    table.innerHTML = `<tr><td style="padding:16px;color:var(--red);">Erro: ${error.message}</td></tr>`;
+    return;
+  }
+  BANNERS_CACHE = data || [];
+  document.getElementById('banners-sub').textContent = `${BANNERS_CACHE.length} banner(s)`;
+  table.innerHTML = `
+    <tr><th>Título</th><th>Posição</th><th>Planos-alvo</th><th>Ativo</th><th></th></tr>
+    ${BANNERS_CACHE.map(b => `
+      <tr>
+        <td>${b.emoji || ''} ${b.titulo || '(sem título)'}</td>
+        <td>${b.posicao}</td>
+        <td style="font-size:11.5px;color:var(--ink-soft);">${(b.planos_alvo && b.planos_alvo.length) ? b.planos_alvo.join(', ') : 'todos'}</td>
+        <td><span class="badge ${b.ativo ? 'aprovada' : 'rejeitada'}">${b.ativo ? 'ativo' : 'inativo'}</span></td>
+        <td class="row-actions">
+          <button class="btn btn-ghost btn-xs" onclick="openBannerModal(${b.id})">Editar</button>
+          <button class="btn btn-ghost btn-xs" onclick="toggleBannerAtivo(${b.id}, ${b.ativo})">${b.ativo ? 'Desativar' : 'Ativar'}</button>
+          <button class="btn btn-red btn-xs" onclick="deleteBanner(${b.id})">Excluir</button>
+        </td>
+      </tr>
+    `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhum banner ainda.</td></tr>`}
+  `;
+}
+
+function openBannerModal(id){
+  document.getElementById('bn-id').value = id || '';
+  document.querySelectorAll('.bn-plano-cb').forEach(cb => cb.checked = false);
+  if (id) {
+    const b = BANNERS_CACHE.find(x => x.id === id);
+    if (!b) return;
+    document.getElementById('banner-modal-title').textContent = 'Editar banner';
+    document.getElementById('bn-emoji').value = b.emoji || '🎯';
+    document.getElementById('bn-posicao').value = b.posicao || 'dashboard';
+    document.getElementById('bn-titulo').value = b.titulo || '';
+    document.getElementById('bn-descricao').value = b.descricao || '';
+    document.getElementById('bn-cta-texto').value = b.cta_texto || 'Ver oferta →';
+    document.getElementById('bn-cta-url').value = b.cta_url || '';
+    document.getElementById('bn-ordem').value = b.ordem || 0;
+    document.getElementById('bn-ativo').checked = !!b.ativo;
+    (b.planos_alvo || []).forEach(p => {
+      const cb = document.querySelector(`.bn-plano-cb[value="${p}"]`);
+      if (cb) cb.checked = true;
+    });
+  } else {
+    document.getElementById('banner-modal-title').textContent = 'Novo banner';
+    document.getElementById('bn-emoji').value = '🎯';
+    document.getElementById('bn-posicao').value = 'dashboard';
+    document.getElementById('bn-titulo').value = '';
+    document.getElementById('bn-descricao').value = '';
+    document.getElementById('bn-cta-texto').value = 'Ver oferta →';
+    document.getElementById('bn-cta-url').value = '';
+    document.getElementById('bn-ordem').value = 0;
+    document.getElementById('bn-ativo').checked = true;
+  }
+  openModal('modal-banner');
+}
+
+async function saveBanner(){
+  const id = document.getElementById('bn-id').value;
+  const titulo = document.getElementById('bn-titulo').value.trim();
+  if (!titulo) { showToast('Informe o título do banner.'); return; }
+  const planos_alvo = [...document.querySelectorAll('.bn-plano-cb:checked')].map(cb => cb.value);
+  const payload = {
+    emoji: document.getElementById('bn-emoji').value || '🎯',
+    posicao: document.getElementById('bn-posicao').value,
+    titulo,
+    descricao: document.getElementById('bn-descricao').value.trim() || null,
+    cta_texto: document.getElementById('bn-cta-texto').value.trim() || 'Ver oferta →',
+    cta_url: document.getElementById('bn-cta-url').value.trim() || null,
+    planos_alvo,
+    ordem: parseInt(document.getElementById('bn-ordem').value, 10) || 0,
+    ativo: document.getElementById('bn-ativo').checked,
+  };
+  const { error } = id
+    ? await sb.from('banners').update(payload).eq('id', id)
+    : await sb.from('banners').insert(payload);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('✓ Banner salvo');
+  closeModal('modal-banner');
+  loadBanners();
+}
+
+async function toggleBannerAtivo(id, atual){
+  const { error } = await sb.from('banners').update({ ativo: !atual }).eq('id', id);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  loadBanners();
+}
+
+async function deleteBanner(id){
+  if (!confirm('Excluir este banner?')) return;
+  const { error } = await sb.from('banners').delete().eq('id', id);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('Banner excluído');
+  loadBanners();
+}
+
+// ---- notificações ----
+async function loadNotificacoes(){
+  const { data, error } = await sb.from('notificacoes').select('*').order('created_at', { ascending: false });
+  const table = document.getElementById('notif-table');
+  if (error) {
+    table.innerHTML = `<tr><td style="padding:16px;color:var(--red);">Erro: ${error.message}</td></tr>`;
+    return;
+  }
+  document.getElementById('notif-sub').textContent = `${(data || []).length} notificação(ões)`;
+  table.innerHTML = `
+    <tr><th>Título</th><th>Destinatário</th><th>Enviada em</th><th>Ativa</th><th></th></tr>
+    ${(data || []).map(n => `
+      <tr>
+        <td>${n.emoji || ''} ${n.titulo}</td>
+        <td style="font-size:11.5px;color:var(--ink-soft);">${n.destinatario}</td>
+        <td style="font-size:11.5px;color:var(--ink-soft);">${new Date(n.created_at).toLocaleDateString('pt-BR')}</td>
+        <td><span class="badge ${n.ativo ? 'aprovada' : 'rejeitada'}">${n.ativo ? 'ativa' : 'inativa'}</span></td>
+        <td class="row-actions"><button class="btn btn-red btn-xs" onclick="deleteNotificacao(${n.id})">Excluir</button></td>
+      </tr>
+    `).join('') || `<tr><td colspan="5" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhuma notificação ainda.</td></tr>`}
+  `;
+}
+
+function openNotifModal(){
+  document.getElementById('nt-emoji').value = '🔔';
+  document.getElementById('nt-destinatario').value = 'todos';
+  document.getElementById('nt-titulo').value = '';
+  document.getElementById('nt-mensagem').value = '';
+  document.getElementById('nt-url').value = '';
+  document.getElementById('nt-url-texto').value = 'Ver mais →';
+  openModal('modal-notif');
+}
+
+async function sendNotificacao(){
+  const titulo = document.getElementById('nt-titulo').value.trim();
+  const mensagem = document.getElementById('nt-mensagem').value.trim();
+  if (!titulo || !mensagem) { showToast('Título e mensagem são obrigatórios.'); return; }
+  const payload = {
+    emoji: document.getElementById('nt-emoji').value || '🔔',
+    destinatario: document.getElementById('nt-destinatario').value,
+    titulo,
+    mensagem,
+    url: document.getElementById('nt-url').value.trim() || null,
+    url_texto: document.getElementById('nt-url-texto').value.trim() || 'Ver mais →',
+    ativo: true,
+  };
+  const { error } = await sb.from('notificacoes').insert(payload);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('✓ Notificação enviada — alunos verão no próximo login');
+  closeModal('modal-notif');
+  loadNotificacoes();
+}
+
+async function deleteNotificacao(id){
+  if (!confirm('Excluir esta notificação?')) return;
+  const { error } = await sb.from('notificacoes').delete().eq('id', id);
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast('Notificação excluída');
+  loadNotificacoes();
+}
+
+// ---- sugestões de questões (alunos -> revisão -> publicação) ----
+async function loadSugestoes(status){
+  const { data, error } = await sb.from('question_suggestions')
+    .select('*, profiles:user_id(name, email)')
+    .eq('status', status)
+    .order('created_at', { ascending: false });
+  const list = document.getElementById('sug-list');
+  if (error) {
+    list.innerHTML = `<div style="color:var(--red);">Erro: ${error.message}</div>`;
+    return;
+  }
+  document.getElementById('sug-sub').textContent = `${(data || []).length} sugestão(ões) ${status}`;
+
+  // contador de pendentes na sidebar (independente da aba aberta)
+  if (status === 'pendente') {
+    const badge = document.getElementById('sb-sug-count');
+    if ((data || []).length > 0) {
+      badge.style.display = 'inline';
+      badge.textContent = `${data.length}`;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  if (!(data || []).length) {
+    list.innerHTML = `<div class="panel" style="text-align:center;color:var(--ink-soft);padding:24px;">Nenhuma sugestão ${status} aqui.</div>`;
+    return;
+  }
+
+  list.innerHTML = data.map(s => {
+    const opcoesHtml = (s.opcoes || []).map(o => `
+      <div class="opt ${o.letra === s.gabarito ? 'correct' : ''}" style="cursor:default;">
+        <span class="letter">${o.letra}</span> ${o.texto}
+      </div>
+    `).join('');
+    const acoes = s.status === 'pendente' ? `
+      <div class="q-actions" style="margin-top:14px;">
+        <span></span>
+        <div class="btn-row">
+          <button class="btn btn-green" onclick="reviewSugestao('${s.id}', 'aprovar')">Aprovar e publicar</button>
+          <button class="btn btn-red" onclick="reviewSugestao('${s.id}', 'rejeitar')">Rejeitar</button>
+        </div>
+      </div>
+    ` : (s.admin_note ? `<div class="sub" style="margin-top:10px;font-size:12px;">Nota: ${s.admin_note}</div>` : '');
+
+    return `
+      <div class="q-card">
+        <div class="q-meta">
+          <span class="tag area">${s.area}</span>
+          ${s.tema ? `<span class="tag">${s.tema}</span>` : ''}
+          <span class="tag" style="margin-left:auto;">por ${s.profiles?.name || s.profiles?.email || 'aluno'} · ${new Date(s.created_at).toLocaleDateString('pt-BR')}</span>
+        </div>
+        <p class="q-text">${s.enunciado}</p>
+        ${opcoesHtml}
+        ${s.justificativa ? `<div class="sub" style="margin-top:10px;font-size:12.5px;"><strong>Justificativa:</strong> ${s.justificativa}</div>` : ''}
+        ${acoes}
+      </div>
+    `;
+  }).join('');
+}
+
+document.querySelectorAll('.tab-btn[data-sugtab]').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn[data-sugtab]').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    loadSugestoes(tab.dataset.sugtab);
+  });
+});
+
+async function reviewSugestao(id, acao){
+  let nota = null;
+  if (acao === 'rejeitar') {
+    nota = prompt('Motivo da rejeição (opcional, o aluno pode ver):', '') || null;
+  }
+  const { data, error } = await sb.rpc('review_suggestion', {
+    p_id: id, p_action: acao, p_admin_note: nota, p_product_id: null,
+  });
+  if (error) { showToast('Erro: ' + error.message); return; }
+  showToast(acao === 'aprovar' ? '✓ Sugestão aprovada e publicada no banco' : 'Sugestão rejeitada');
+  const activeTab = document.querySelector('.tab-btn[data-sugtab].active').dataset.sugtab;
+  loadSugestoes(activeTab);
+  loadDashboardStats();
+}
+
+
 function simulateImport(){
   document.getElementById('import-report').style.display = 'block';
   showToast('Preview only — importador real entra na próxima etapa');
 }
 
-// ---- toggles das páginas ainda não conectadas (simulados/banners) ----
-document.querySelectorAll('#page-simulados .toggle, #page-banners .toggle').forEach(t => {
+// ---- toggles das páginas ainda não conectadas (simulados) ----
+document.querySelectorAll('#page-simulados .toggle').forEach(t => {
   t.addEventListener('click', () => t.classList.toggle('on'));
 });
 
